@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
+    <title>Herramientas PDF + Archivos | Compresión segura</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1100px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            padding: 30px;
+            transition: all 0.3s ease;
+        }
+        h1 { font-size: 2.2rem; color: #2d3748; margin-bottom: 10px; display: flex; align-items: center; gap: 15px; }
+        h1 i { color: #667eea; font-size: 2.5rem; }
+        .subtitle { color: #718096; margin-bottom: 30px; font-size: 1.1rem; border-left: 4px solid #667eea; padding-left: 15px; }
+        .mode-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 30px 0; }
+        .mode-card { position: relative; }
+        .mode-card input[type="radio"] { display: none; }
+        .mode-card label {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px 15px; background: #f7fafc; border-radius: 20px; cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 2px solid transparent;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); text-align: center; height: 100%;
+        }
+        .mode-card input[type="radio"]:checked + label {
+            background: linear-gradient(145deg, #667eea, #764ba2); color: white;
+            border-color: #5a67d8; transform: scale(1.02); box-shadow: 0 20px 25px -5px rgba(102, 126, 234, 0.5);
+        }
+        .mode-card label i { font-size: 2.5rem; margin-bottom: 10px; color: #667eea; }
+        .mode-card input[type="radio"]:checked + label i { color: white; }
+        .mode-card label span { font-weight: 600; font-size: 1.1rem; }
+        .mode-card label small { font-size: 0.85rem; margin-top: 5px; opacity: 0.8; }
+        .file-input-card {
+            background: #edf2f7; border-radius: 20px; padding: 25px; margin: 25px 0;
+            border: 2px dashed #cbd5e0; transition: border-color 0.3s;
+        }
+        .file-input-card:hover { border-color: #667eea; }
+        .file-label { display: block; font-weight: 700; color: #2d3748; margin-bottom: 12px; font-size: 1.2rem; }
+        .file-label i { margin-right: 10px; color: #667eea; }
+        input[type="file"] {
+            width: 100%; padding: 15px; background: white; border: 1px solid #e2e8f0;
+            border-radius: 15px; font-size: 1rem; color: #4a5568; cursor: pointer; transition: all 0.3s;
+        }
+        input[type="file"]:hover { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        .extra-options {
+            background: #f0f4f8; border-radius: 20px; padding: 20px; margin: 20px 0;
+            animation: slideDown 0.3s ease;
+        }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        .option-row { margin-bottom: 20px; }
+        .option-row label { display: block; font-weight: 600; color: #2d3748; margin-bottom: 8px; }
+        .option-row input[type="range"] {
+            width: 100%; height: 8px; border-radius: 10px; background: #cbd5e0; outline: none; -webkit-appearance: none;
+        }
+        .option-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 22px; height: 22px; background: #667eea; border-radius: 50%;
+            cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: 0.2s;
+        }
+        .option-row input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.1); background: #5a67d8; }
+        .value-badge {
+            display: inline-block; background: white; padding: 5px 15px; border-radius: 30px;
+            font-weight: 700; color: #667eea; margin-left: 10px; border: 1px solid #e2e8f0;
+        }
+        .checkbox-option {
+            display: flex; align-items: center; gap: 10px; background: white; padding: 12px 20px;
+            border-radius: 15px; border: 1px solid #e2e8f0;
+        }
+        .checkbox-option input[type="checkbox"] { width: 20px; height: 20px; accent-color: #667eea; }
+        .btn-primary {
+            background: linear-gradient(145deg, #667eea, #764ba2); color: white; border: none;
+            padding: 18px 30px; border-radius: 60px; font-size: 1.3rem; font-weight: 700; cursor: pointer;
+            transition: all 0.3s; width: 100%; box-shadow: 0 10px 15px -3px rgba(102, 126, 234, 0.4);
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgba(102, 126, 234, 0.6); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; background: #a0aec0; box-shadow: none; }
+        .progress-card {
+            background: #fefcbf; border-radius: 20px; padding: 20px; margin: 20px 0;
+            border-left: 8px solid #ecc94b; color: #744210; display: flex; align-items: center; gap: 15px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
+        .progress-card i { font-size: 2rem; }
+        .download-card {
+            background: #c6f6d5; border-radius: 20px; padding: 20px; margin: 20px 0;
+            border-left: 8px solid #48bb78; text-align: center;
+        }
+        .download-card a {
+            display: inline-flex; align-items: center; gap: 10px; background: #22543d; color: white;
+            padding: 15px 30px; border-radius: 60px; text-decoration: none; font-weight: 700; font-size: 1.2rem;
+            transition: 0.3s;
+        }
+        .download-card a:hover { background: #276749; transform: scale(1.05); }
+        .error-card {
+            background: #fed7d7; border-radius: 20px; padding: 20px; margin: 20px 0;
+            border-left: 8px solid #f56565; color: #c53030; display: flex; align-items: center; gap: 15px;
+        }
+        .error-card i { font-size: 2rem; }
+        .info-note {
+            background: #e6f7ff; border-radius: 15px; padding: 15px; margin: 15px 0;
+            border-left: 4px solid #1890ff; color: #0050b3; font-size: 0.95rem;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .info-note i { font-size: 1.5rem; color: #1890ff; }
+        .footer-note { text-align: center; margin-top: 30px; color: #a0aec0; font-size: 0.9rem; }
+        @media (max-width: 640px) {
+            h1 { font-size: 1.8rem; }
+            .mode-selector { grid-template-columns: 1fr; }
+        }
+        .warning-note {
+            background: #fff3cd; border-left-color: #ffc107; color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><i class="fas fa-tools"></i> MultiTool PDF + Archivos</h1>
+        <div class="subtitle">Convierte, comprime y empaqueta con un solo clic</div>
+
+        <div class="mode-selector">
+            <div class="mode-card">
+                <input type="radio" name="mode" id="modeImage" value="image" checked>
+                <label for="modeImage"><i class="fas fa-file-pdf"></i><span>PDF a PDF con imágenes</span><small>Cada página se convierte en imagen</small></label>
+            </div>
+            <div class="mode-card">
+                <input type="radio" name="mode" id="modeCompress" value="compress">
+                <label for="modeCompress"><i class="fas fa-compress-alt"></i><span>Comprimir PDF</span><small>Reduce tamaño sin perder legibilidad</small></label>
+            </div>
+            <div class="mode-card">
+                <input type="radio" name="mode" id="modeWord" value="word">
+                <label for="modeWord"><i class="fas fa-file-word"></i><span>PDF a Word</span><small>Convierte a documento Word (con imágenes)</small></label>
+            </div>
+            <div class="mode-card">
+                <input type="radio" name="mode" id="modeRar" value="rar">
+                <label for="modeRar"><i class="fas fa-file-archive"></i><span>Generar archivo comprimido</span><small>ZIP o RAR simulado</small></label>
+            </div>
+        </div>
+
+        <div class="file-input-card" id="fileInputArea">
+            <label class="file-label" id="fileLabel"><i class="fas fa-cloud-upload-alt"></i> Selecciona un archivo PDF:</label>
+            <input type="file" id="pdfFile" accept=".pdf" />
+        </div>
+
+        <!-- Opciones de compresión con rangos seguros -->
+        <div id="compressOptions" class="extra-options" style="display: none;">
+            <div class="option-row">
+                <label>Calidad JPEG <i class="fas fa-image"></i> <span class="value-badge" id="qualityValue">80%</span></label>
+                <input type="range" id="jpegQuality" min="40" max="100" value="80" step="1">
+                <small>Mínimo 40% para asegurar legibilidad. Menor calidad = archivo más pequeño.</small>
+            </div>
+            <div class="option-row">
+                <label>Escala de resolución <i class="fas fa-expand-arrows-alt"></i> <span class="value-badge" id="scaleValue">100%</span></label>
+                <input type="range" id="scaleFactor" min="50" max="200" value="100" step="5">
+                <small>Mínimo 50% para evitar pérdida de detalles. Reduce la escala para comprimir más.</small>
+            </div>
+            <div class="info-note warning-note">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Los valores están limitados para garantizar que el resultado sea legible. Si necesita mayor compresión, considere usar el modo "PDF a PDF con imágenes" con PNG.</span>
+            </div>
+        </div>
+
+        <!-- Opciones para archivo comprimido -->
+        <div id="rarOptions" class="extra-options" style="display: none;">
+            <div class="checkbox-option">
+                <input type="checkbox" id="useRarExt">
+                <label for="useRarExt">Usar extensión .rar (el archivo sigue siendo ZIP)</label>
+            </div>
+            <div class="info-note">
+                <i class="fas fa-info-circle"></i> El archivo se genera en formato ZIP, pero puedes cambiar la extensión a .rar.
+            </div>
+        </div>
+
+        <!-- Nota para PDF a Word -->
+        <div id="wordNote" class="info-note" style="display: none;">
+            <i class="fas fa-info-circle"></i>
+            <span>El documento Word generado contiene cada página como imagen para mantener el formato exacto. El texto no será editable directamente.</span>
+        </div>
+
+        <button id="convertBtn" class="btn-primary" disabled><i class="fas fa-play"></i> Procesar</button>
+
+        <div id="progress" class="progress-card" style="display: none;">
+            <i class="fas fa-spinner fa-pulse"></i>
+            <span id="progressMessage">Procesando...</span>
+        </div>
+
+        <div id="downloadContainer" class="download-card" style="display: none;">
+            <a id="downloadLink" download="resultado.pdf"><i class="fas fa-download"></i> Descargar archivo</a>
+        </div>
+
+        <div id="errorContainer" class="error-card" style="display: none;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span id="errorMessage"></span>
+        </div>
+
+        <div class="footer-note">
+            <i class="fas fa-heart" style="color: #f56565;"></i> Herramientas 100% gratuitas, todo se procesa en tu navegador
+        </div>
+    </div>
+
+    <!-- Librerías externas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <script>
+        (function() {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+            const modeRadios = document.querySelectorAll('input[name="mode"]');
+            const fileInput = document.getElementById('pdfFile');
+            const fileLabel = document.getElementById('fileLabel');
+            const convertBtn = document.getElementById('convertBtn');
+            const progressDiv = document.getElementById('progress');
+            const progressMessage = document.getElementById('progressMessage');
+            const downloadContainer = document.getElementById('downloadContainer');
+            const downloadLink = document.getElementById('downloadLink');
+            const errorContainer = document.getElementById('errorContainer');
+            const errorMessage = document.getElementById('errorMessage');
+            const compressOptions = document.getElementById('compressOptions');
+            const rarOptions = document.getElementById('rarOptions');
+            const wordNote = document.getElementById('wordNote');
+            const qualitySlider = document.getElementById('jpegQuality');
+            const qualitySpan = document.getElementById('qualityValue');
+            const scaleSlider = document.getElementById('scaleFactor');
+            const scaleSpan = document.getElementById('scaleValue');
+            const useRarExt = document.getElementById('useRarExt');
+
+            let selectedFiles = [];
+            let currentMode = 'image';
+
+            qualitySlider.addEventListener('input', () => {
+                qualitySpan.textContent = qualitySlider.value + '%';
+            });
+            scaleSlider.addEventListener('input', () => {
+                scaleSpan.textContent = scaleSlider.value + '%';
+            });
+
+            modeRadios.forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    currentMode = e.target.value;
+                    compressOptions.style.display = currentMode === 'compress' ? 'block' : 'none';
+                    rarOptions.style.display = currentMode === 'rar' ? 'block' : 'none';
+                    wordNote.style.display = currentMode === 'word' ? 'flex' : 'none';
+                    
+                    if (currentMode === 'rar') {
+                        fileInput.accept = '*/*';
+                        fileInput.multiple = true;
+                        fileLabel.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Selecciona uno o varios archivos:';
+                    } else {
+                        fileInput.accept = '.pdf';
+                        fileInput.multiple = false;
+                        fileLabel.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Selecciona un archivo PDF:';
+                    }
+                    
+                    fileInput.value = '';
+                    selectedFiles = [];
+                    convertBtn.disabled = true;
+                    downloadContainer.style.display = 'none';
+                    errorContainer.style.display = 'none';
+                });
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (currentMode === 'rar') {
+                    selectedFiles = Array.from(e.target.files);
+                } else {
+                    selectedFiles = e.target.files[0] ? [e.target.files[0]] : [];
+                }
+                convertBtn.disabled = selectedFiles.length === 0;
+                downloadContainer.style.display = 'none';
+                errorContainer.style.display = 'none';
+            });
+
+            convertBtn.addEventListener('click', async () => {
+                if (selectedFiles.length === 0) return;
+
+                downloadContainer.style.display = 'none';
+                errorContainer.style.display = 'none';
+                progressDiv.style.display = 'flex';
+                convertBtn.disabled = true;
+
+                try {
+                    if (currentMode === 'image') {
+                        await convertPdfToImagePdf(selectedFiles[0]);
+                    } else if (currentMode === 'compress') {
+                        await compressPdf(selectedFiles[0]);
+                    } else if (currentMode === 'word') {
+                        await convertPdfToWord(selectedFiles[0]);
+                    } else if (currentMode === 'rar') {
+                        await createArchive(selectedFiles);
+                    }
+                } catch (error) {
+                    console.error(error);
+                    errorMessage.textContent = error.message || 'Ocurrió un error inesperado.';
+                    errorContainer.style.display = 'flex';
+                } finally {
+                    progressDiv.style.display = 'none';
+                    convertBtn.disabled = false;
+                }
+            });
+
+            function readFileAsArrayBuffer(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            async function renderPageToCanvas(page, scale) {
+                const viewport = page.getViewport({ scale });
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                const context = canvas.getContext('2d');
+                await page.render({ canvasContext: context, viewport }).promise;
+                return canvas;
+            }
+
+            async function convertPdfToImagePdf(file) {
+                const arrayBuffer = await readFileAsArrayBuffer(file);
+                const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                const totalPages = pdfDoc.numPages;
+                progressMessage.textContent = `Procesando página 0 de ${totalPages}...`;
+
+                const pagesData = [];
+                for (let i = 1; i <= totalPages; i++) {
+                    progressMessage.textContent = `Procesando página ${i} de ${totalPages}...`;
+                    const page = await pdfDoc.getPage(i);
+                    const originalWidth = page.getViewport({ scale: 1 }).width;
+                    const originalHeight = page.getViewport({ scale: 1 }).height;
+                    const scale = 150 / 72;
+                    const canvas = await renderPageToCanvas(page, scale);
+                    const imageDataUrl = canvas.toDataURL('image/png');
+                    pagesData.push({ imageDataUrl, width: originalWidth, height: originalHeight });
+                    canvas.remove();
+                }
+
+                const { PDFDocument } = PDFLib;
+                const newPdf = await PDFDocument.create();
+                for (const pageData of pagesData) {
+                    const imageBytes = await fetch(pageData.imageDataUrl).then(res => res.arrayBuffer());
+                    const image = await newPdf.embedPng(imageBytes);
+                    const page = newPdf.addPage([pageData.width, pageData.height]);
+                    page.drawImage(image, { x: 0, y: 0, width: pageData.width, height: pageData.height });
+                }
+                const pdfBytes = await newPdf.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                downloadLink.href = url;
+                downloadLink.download = 'pdf_imagenes.pdf';
+                downloadContainer.style.display = 'block';
+            }
+
+            async function compressPdf(file) {
+                const arrayBuffer = await readFileAsArrayBuffer(file);
+                const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                const totalPages = pdfDoc.numPages;
+                progressMessage.textContent = `Comprimiendo página 0 de ${totalPages}...`;
+
+                const quality = parseInt(qualitySlider.value) / 100;
+                const scalePercent = parseInt(scaleSlider.value) / 100;
+                const baseScale = 150 / 72;
+                const scale = baseScale * scalePercent;
+
+                const pagesData = [];
+                for (let i = 1; i <= totalPages; i++) {
+                    progressMessage.textContent = `Comprimiendo página ${i} de ${totalPages}...`;
+                    const page = await pdfDoc.getPage(i);
+                    const originalWidth = page.getViewport({ scale: 1 }).width;
+                    const originalHeight = page.getViewport({ scale: 1 }).height;
+                    const canvas = await renderPageToCanvas(page, scale);
+                    const imageDataUrl = canvas.toDataURL('image/jpeg', quality);
+                    pagesData.push({ imageDataUrl, width: originalWidth, height: originalHeight });
+                    canvas.remove();
+                }
+
+                const { PDFDocument } = PDFLib;
+                const newPdf = await PDFDocument.create();
+                for (const pageData of pagesData) {
+                    const imageBytes = await fetch(pageData.imageDataUrl).then(res => res.arrayBuffer());
+                    const image = await newPdf.embedJpg(imageBytes);
+                    const page = newPdf.addPage([pageData.width, pageData.height]);
+                    page.drawImage(image, { x: 0, y: 0, width: pageData.width, height: pageData.height });
+                }
+                const pdfBytes = await newPdf.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                downloadLink.href = url;
+                downloadLink.download = 'pdf_comprimido.pdf';
+                downloadContainer.style.display = 'block';
+            }
+
+            async function convertPdfToWord(file) {
+                const arrayBuffer = await readFileAsArrayBuffer(file);
+                const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                const totalPages = pdfDoc.numPages;
+                progressMessage.textContent = `Procesando página 0 de ${totalPages} para Word...`;
+
+                const scale = 150 / 72;
+                const images = [];
+
+                for (let i = 1; i <= totalPages; i++) {
+                    progressMessage.textContent = `Procesando página ${i} de ${totalPages}...`;
+                    const page = await pdfDoc.getPage(i);
+                    const canvas = await renderPageToCanvas(page, scale);
+                    const imageDataUrl = canvas.toDataURL('image/png');
+                    const blob = await (await fetch(imageDataUrl)).blob();
+                    const buffer = await blob.arrayBuffer();
+                    images.push(buffer);
+                    canvas.remove();
+                }
+
+                const { Document, Packer, Paragraph, ImageRun } = docx;
+
+                const children = [];
+                for (let i = 0; i < images.length; i++) {
+                    const img = new ImageRun({
+                        data: images[i],
+                        transformation: { width: 600, height: 800 },
+                        type: 'png',
+                    });
+                    children.push(new Paragraph({ children: [img], alignment: 'center' }));
+                    if (i < images.length - 1) {
+                        children.push(new Paragraph({ text: '', pageBreakBefore: true }));
+                    }
+                }
+
+                const doc = new Document({ sections: [{ children }] });
+                const blob = await Packer.toBlob(doc);
+                const url = URL.createObjectURL(blob);
+                downloadLink.href = url;
+                downloadLink.download = 'documento.docx';
+                downloadContainer.style.display = 'block';
+            }
+
+            async function createArchive(files) {
+                progressMessage.textContent = `Comprimiendo ${files.length} archivo(s)...`;
+                const zip = new JSZip();
+
+                for (const file of files) {
+                    const arrayBuffer = await readFileAsArrayBuffer(file);
+                    zip.file(file.name, arrayBuffer);
+                }
+
+                const zipBlob = await zip.generateAsync({ type: 'blob' });
+                const url = URL.createObjectURL(zipBlob);
+                downloadLink.href = url;
+                downloadLink.download = useRarExt.checked ? 'archivo.rar' : 'archivo.zip';
+                downloadContainer.style.display = 'block';
+            }
+        })();
+    </script>
+</body>
+</html>
