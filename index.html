@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
-    <title>Herramientas PDF + Archivos | Compresión segura</title>
+    <title>Herramientas PDF + Archivos | Word con orientación</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        /* Mismos estilos que la versión anterior (se mantienen para consistencia) */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -145,7 +146,7 @@
             </div>
             <div class="mode-card">
                 <input type="radio" name="mode" id="modeWord" value="word">
-                <label for="modeWord"><i class="fas fa-file-word"></i><span>PDF a Word</span><small>Convierte a documento Word (con imágenes)</small></label>
+                <label for="modeWord"><i class="fas fa-file-word"></i><span>PDF a Word</span><small>Con orientación original y ajuste de página</small></label>
             </div>
             <div class="mode-card">
                 <input type="radio" name="mode" id="modeRar" value="rar">
@@ -172,7 +173,7 @@
             </div>
             <div class="info-note warning-note">
                 <i class="fas fa-exclamation-triangle"></i>
-                <span>Los valores están limitados para garantizar que el resultado sea legible. Si necesita mayor compresión, considere usar el modo "PDF a PDF con imágenes" con PNG.</span>
+                <span>Los valores están limitados para garantizar que el resultado sea legible.</span>
             </div>
         </div>
 
@@ -187,10 +188,10 @@
             </div>
         </div>
 
-        <!-- Nota para PDF a Word -->
+        <!-- Nota para PDF a Word (actualizada) -->
         <div id="wordNote" class="info-note" style="display: none;">
             <i class="fas fa-info-circle"></i>
-            <span>El documento Word generado contiene cada página como imagen para mantener el formato exacto. El texto no será editable directamente.</span>
+            <span>El documento Word mantiene la orientación original de cada página (horizontal/vertical) y las imágenes se ajustan al ancho completo de la página.</span>
         </div>
 
         <button id="convertBtn" class="btn-primary" disabled><i class="fas fa-play"></i> Procesar</button>
@@ -410,42 +411,67 @@
                 downloadContainer.style.display = 'block';
             }
 
+            // NUEVA VERSIÓN DE PDF A WORD CON ORIENTACIÓN Y TAMAÑO AJUSTADO
             async function convertPdfToWord(file) {
                 const arrayBuffer = await readFileAsArrayBuffer(file);
                 const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
                 const totalPages = pdfDoc.numPages;
                 progressMessage.textContent = `Procesando página 0 de ${totalPages} para Word...`;
 
-                const scale = 150 / 72;
+                // Escala 1 (72 DPI) para que 1 píxel = 1 punto en Word
+                const scale = 1;
                 const images = [];
 
                 for (let i = 1; i <= totalPages; i++) {
                     progressMessage.textContent = `Procesando página ${i} de ${totalPages}...`;
                     const page = await pdfDoc.getPage(i);
+                    const viewport = page.getViewport({ scale: 1 }); // dimensiones en puntos
+                    const width = viewport.width;
+                    const height = viewport.height;
+
                     const canvas = await renderPageToCanvas(page, scale);
                     const imageDataUrl = canvas.toDataURL('image/png');
                     const blob = await (await fetch(imageDataUrl)).blob();
                     const buffer = await blob.arrayBuffer();
-                    images.push(buffer);
+                    images.push({ buffer, width, height });
                     canvas.remove();
                 }
 
-                const { Document, Packer, Paragraph, ImageRun } = docx;
+                const { Document, Packer, Paragraph, ImageRun, PageOrientation } = docx;
 
-                const children = [];
+                // Crear una sección por cada página con su orientación
+                const sections = [];
                 for (let i = 0; i < images.length; i++) {
-                    const img = new ImageRun({
-                        data: images[i],
-                        transformation: { width: 600, height: 800 },
+                    const img = images[i];
+                    const orientation = img.width > img.height ? PageOrientation.LANDSCAPE : PageOrientation.PORTRAIT;
+
+                    const imgRun = new ImageRun({
+                        data: img.buffer,
+                        transformation: {
+                            width: img.width,  // en píxeles (equivalente a puntos en este caso)
+                            height: img.height,
+                        },
                         type: 'png',
                     });
-                    children.push(new Paragraph({ children: [img], alignment: 'center' }));
-                    if (i < images.length - 1) {
-                        children.push(new Paragraph({ text: '', pageBreakBefore: true }));
-                    }
+
+                    const paragraph = new Paragraph({
+                        children: [imgRun],
+                        alignment: 'center',
+                    });
+
+                    sections.push({
+                        properties: {
+                            page: {
+                                size: {
+                                    orientation: orientation,
+                                },
+                            },
+                        },
+                        children: [paragraph],
+                    });
                 }
 
-                const doc = new Document({ sections: [{ children }] });
+                const doc = new Document({ sections });
                 const blob = await Packer.toBlob(doc);
                 const url = URL.createObjectURL(blob);
                 downloadLink.href = url;
